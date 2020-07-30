@@ -1,27 +1,36 @@
 package com.example.exercise;
 
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.view.MenuItem;
-import android.view.ViewGroup;
+import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.exercise.helper.DensityUtil;
+import com.example.exercise.helper.CountDownTimerWithPause;
+import com.example.exercise.widget.LeaveDialogFragment;
 
 import java.util.Locale;
 
 public class ExerciseActivity extends AppCompatActivity {
     private TextView timer;
+    private Button controlButton;
+    private boolean curr = false;
+    private ExerciseConstant.ControlStatus controlStatus = ExerciseConstant.ControlStatus.PLAY;
+    private int leftTimes;
+    private boolean up = false;
     private ExerciseConstant.Status status = ExerciseConstant.Status.SQUEEZE;
-    private CountDownTimer countDownTimer;
+    private CountDownTimerWithPause countDownTimer;
     private Handler handler;
+    private LeaveDialogFragment leaveDialogFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,78 +46,101 @@ public class ExerciseActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         timer = findViewById(R.id.timer);
-        setCountDownTimer(ExerciseConstant.TotalTimeInQuick);
-//        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(DensityUtil.dp2px(getApplicationContext(), 100f), DensityUtil.dp2px(getApplicationContext(), 100f));
-//        final ViewGroup.LayoutParams smallLayoutParams = new ViewGroup.LayoutParams(DensityUtil.dp2px(getApplicationContext(), 80f), DensityUtil.dp2px(getApplicationContext(), 80f));
-
+        controlButton = findViewById(R.id.control_button);
+        controlButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                boolean status = countDownTimer.ismPaused();
+                if (status) {
+                    countDownTimer.resume();
+                    controlButton.setText(R.string.pause);
+                } else {
+                    countDownTimer.pause();
+                    controlButton.setText(R.string.play);
+                }
+            }
+        });
+        // 开始计时
+        setCountDownTimer(ExerciseConstant.TotalTimeInQuick, false, ExerciseConstant.TotalQuickCount);
         handler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
             @Override
             public boolean handleMessage(@NonNull Message msg) {
                 if (msg.what == 0) {
-                    ViewGroup.LayoutParams layoutParams =  timer.getLayoutParams();
-                    layoutParams.height = DensityUtil.dp2px(getApplicationContext(), 100f);
-                    layoutParams.width = DensityUtil.dp2px(getApplicationContext(), 100f);
-                    timer.setLayoutParams(layoutParams);
+                    final ScaleAnimation scaleAnimation = new ScaleAnimation(1, 1.3f, 1, 1.3f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+                    scaleAnimation.setDuration(1000);
+                    scaleAnimation.setFillAfter(true);
+                    timer.startAnimation(scaleAnimation);
                 } else {
-                    ViewGroup.LayoutParams layoutParams =  timer.getLayoutParams();
-                    layoutParams.height = DensityUtil.dp2px(getApplicationContext(), 80f);
-                    layoutParams.width = DensityUtil.dp2px(getApplicationContext(), 80f);
-                    timer.setLayoutParams(layoutParams);
+                    final ScaleAnimation scaleAnimationReverse = new ScaleAnimation(1.3f, 1, 1.3f, 1, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+                    scaleAnimationReverse.setDuration(1000);
+                    scaleAnimationReverse.setFillAfter(true);
+                    timer.startAnimation(scaleAnimationReverse);
                 }
                 return true;
             }
         });
-//        Looper.loop();
+        // 离开的对话框
+        leaveDialogFragment = new LeaveDialogFragment();
     }
 
-    public void setCountDownTimer(final int duration) {
+    public void setCountDownTimer(final int duration, final boolean up, final int leftTimes) {
         if (this.countDownTimer != null) {
             return;
         }
-        this.countDownTimer = new CountDownTimer(duration, 500) {;
+        this.up = up;
+        this.leftTimes = leftTimes;
+        this.countDownTimer = new CountDownTimerWithPause(duration, 500) {;
             @Override
             public void onTick(long mills) {
                 if (mills == 0) {
                     timer.setText(String.format(Locale.getDefault(), "%d", duration));
                     return;
                 }
-                timer.setText(String.format(Locale.getDefault(), "%.1f", (double) mills / 1000));
+                if (up) {
+                    timer.setText(String.format(Locale.getDefault(), "%.1f", (double) (duration - mills) / 1000));
+                } else {
+                    timer.setText(String.format(Locale.getDefault(), "%.1f", (double) mills / 1000));
+                }
             }
+
+//            @Override
+//            public void onFinish() {
+//                Message message = new Message();
+//                if (status == ExerciseConstant.Status.SQUEEZE) {
+//                    status = ExerciseConstant.Status.REST;
+//                    message.what = 0;
+//                    handler.sendMessage(message);
+//                } else {
+//                    status = ExerciseConstant.Status.SQUEEZE;
+//                    message.what = 1;
+//                    handler.sendMessage(message);
+//                }
+//                countDownTimer = null;
+//                if (leftTimes > 0) {
+//                    setCountDownTimer(duration, !up, leftTimes - 1);
+//                }
+//            }
 
             @Override
             public void onFinish() {
-                Message message = new Message();
-                if (status == ExerciseConstant.Status.SQUEEZE) {
-                    status = ExerciseConstant.Status.REST;
-                    message.what = 0;
-//                    changeTimerSize(true);
-                    handler.sendMessage(message);
+                if (!up) {
+                    final ScaleAnimation scaleAnimation = new ScaleAnimation(1, 1.3f, 1, 1.3f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+                    scaleAnimation.setDuration(1000);
+                    scaleAnimation.setFillAfter(true);
+                    timer.startAnimation(scaleAnimation);
                 } else {
-                    status = ExerciseConstant.Status.SQUEEZE;
-                    message.what = 1;
-//                    changeTimerSize(false);
-                    handler.sendMessage(message);
+                    final ScaleAnimation scaleAnimationReverse = new ScaleAnimation(1.3f, 1, 1.3f, 1, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+                    scaleAnimationReverse.setDuration(1000);
+                    scaleAnimationReverse.setFillAfter(true);
+                    timer.startAnimation(scaleAnimationReverse);
                 }
-//                Looper.loop();
                 countDownTimer = null;
-                setCountDownTimer(duration);
+                if (leftTimes > 0) {
+                    setCountDownTimer(duration, !up, leftTimes - 1);
+                }
             }
         };
         this.countDownTimer.start();
-    }
-
-    private void changeTimerSize(boolean isBigger) {
-//        if (isBigger) {
-//            ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(DensityUtil.dp2px(getApplicationContext(), 100f), DensityUtil.dp2px(getApplicationContext(), 100f));
-//            timer.setLayoutParams(layoutParams);
-//        } else {
-//            ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(DensityUtil.dp2px(getApplicationContext(), 80f), DensityUtil.dp2px(getApplicationContext(), 80f));
-//            timer.setLayoutParams(layoutParams);
-//        }
-//        timer.setPadding(0, 0, 0, 0);
-        Message message = new Message();
-        message.what = isBigger ? 0 : 1;
-        handler.sendMessage(message);
     }
 
     @Override
@@ -122,6 +154,7 @@ public class ExerciseActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
+                leaveDialogFragment.show();
                 finish();
             default:
                 return super.onOptionsItemSelected(item);

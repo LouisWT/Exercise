@@ -1,7 +1,12 @@
 <resources>
     <string name="app_name">Exercise</string>
     <string name="daily">Daily Goal</string>
-    <string name="start">start</string>
+    <string name="start">Start</string>
     <string name="setting_portal">Exercise Plan &amp; Reminders</string>
     <string name="timer">Timer</string>
+    <string name="pause">Pause</string>
+    <string name="play">Play</string>
+    <string name="leave_message">确定要直接离开吗，这样不会保存此次训练数据</string>
+    <string name="dialog_confirm">确定</string>
+    <string name="dialog_cancel">取消</string>
 </resources>

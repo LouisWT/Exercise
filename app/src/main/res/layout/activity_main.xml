@@ -4,7 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/light_grey"
     tools:context=".MainActivity">
 
     <TextView
@@ -35,9 +34,9 @@
     <com.example.exercise.widget.RoundCornerButton
         android:id="@+id/start_button"
         android:layout_width="match_parent"
-        android:layout_height="45dp"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="10dp"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
         android:gravity="center"
